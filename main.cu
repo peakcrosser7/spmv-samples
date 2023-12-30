@@ -6,7 +6,7 @@
 
 #include "load.hpp"
 #include "common.cuh"
-#include "spmv/spmv.h"
+#include "spmv.h"
 
 using namespace std;
 

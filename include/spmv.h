@@ -4,16 +4,16 @@
 #include <string>
 
 #include "timer.hpp"
-#include "./cpu_navie.hpp"
-#include "./cusparse.cuh"
-#include "./cusp.cuh"
-#include "./cusp_warp_reduce.cuh"
+#include "spmv/cpu_navie.hpp"
+#include "spmv/cusparse.cuh"
+#include "spmv/cusp.cuh"
+#include "spmv/cusp_warp_reduce.cuh"
 
 /// SPMV kind strings and its function
 #define SPMV_KINDS                  \
     X("cusparse", SpMV_cusparse)    \
     X("cusp", SpMV_cusp_origin)     \
-    X("cusp1", SpMV_cusp_warp_reduce)
+    X("cusp1", SpMV_cusp_warp_reduce)       
 
 
 template <typename index_t, typename offset_t, typename mat_value_t,

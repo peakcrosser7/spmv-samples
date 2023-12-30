@@ -2,8 +2,6 @@
 
 #include "common.cuh"
 
-#define FULL_MASK 0xffffffff
-
 template <typename T>
 class ConstFunctor {
 public:
@@ -34,8 +32,8 @@ struct MultFunctor {
     }
 };
 
-
-#define ENABLE_WARPSYNC
+// use `__syncwarp()` -- CC>=7.0
+// #define ENABLE_WARPSYNC
 
 template <unsigned VECTORS_PER_BLOCK, unsigned THREADS_PER_VECTOR,
           typename index_t, typename offset_t, typename mat_value_t,

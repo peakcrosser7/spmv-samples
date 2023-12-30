@@ -13,6 +13,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
+set(CMAKE_CUDA_ARCHITECTURES 70)
 if(NOT CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 70)
     message(STATUS "Using default GPU Architecture: ${CMAKE_CUDA_ARCHITECTURES}")
@@ -22,6 +23,18 @@ endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-add_subdirectory(src)
 
-# add_executable(ctmp ctmp.cpp)
+macro (add_cuda_exec exec_name exec_file)
+    # GPU代码
+    add_executable(${exec_name} ${exec_file})
+    set_target_properties(${exec_name} PROPERTIES 
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
+        CUDA_SEPARABLE_COMPILATION ON
+    )
+    target_link_libraries(spmv
+        PUBLIC cudart /home/huanghy/progs/nvidia_hpc_sdk/Linux_x86_64/22.11/math_libs/lib64/libcusparse.so
+    )
+endmacro (add_cuda_exec)
+
+add_cuda_exec(spmv main.cu)
