@@ -1,9 +1,19 @@
 #pragma once
 
+#include <cuda_runtime.h>
 #include <cusparse.h>      // cusparseSpMV
 
-#include "common.cuh"
 #include "timer.hpp"
+
+#define CHECK_CUDA(func)                                               \
+    {                                                                  \
+        cudaError_t status = (func);                                   \
+        if (status != cudaSuccess) {                                   \
+            printf("CUDA API failed at line %d with error: %s (%d)\n", \
+                   __LINE__, cudaGetErrorString(status), status);      \
+            exit(EXIT_FAILURE);                                        \
+        }                                                              \
+    }
 
 #define CHECK_CUSPARSE(func)                                               \
     {                                                                      \
@@ -70,3 +80,5 @@ void SpMV_cusparse(index_t n_rows,  index_t n_cols, offset_t nnz,
 
     CHECK_CUDA(cudaFree(dBuffer))
 }
+
+#undef CHECK_CUDA

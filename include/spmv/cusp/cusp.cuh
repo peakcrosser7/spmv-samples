@@ -1,36 +1,6 @@
 #pragma once
 
-#include "common.cuh"
-
-template <typename T>
-class ConstFunctor {
-public:
-    __host__ __device__ __forceinline__ 
-    ConstFunctor(const T val = 0) : val(val) {}
-
-    __device__ __forceinline__
-    T operator()(const T &x) const { return val; }
-
-private:
-    T val;
-};
-
-template <typename T>
-struct PlusFunctor {
-    __device__ __forceinline__
-    constexpr T operator()(const T &lhs, const T &rhs) const {
-        return lhs + rhs;
-    }
-};
-
-
-template <typename T>
-struct MultFunctor {
-    __device__ __forceinline__
-    constexpr T operator()(const T &lhs, const T &rhs) const {
-        return lhs * rhs;
-    }
-};
+#include "./common.cuh"
 
 // use `__syncwarp()` -- CC>=7.0
 // #define ENABLE_WARPSYNC
@@ -177,8 +147,20 @@ void __cusp_csr_vector(index_t n_rows,
 
     constexpr unsigned THREADS_PER_BLOCK = 128;
     constexpr unsigned VECTORS_PER_BLOCK  = THREADS_PER_BLOCK / THREADS_PER_VECTOR;
-    const unsigned NUM_BLOCKS = std::max<int>(1, DIVIDE_INTO(n_rows, VECTORS_PER_BLOCK));
 
+#ifdef USE_CUSP_NUM_BLOCKS
+    const size_t MAX_BLOCKS = max_active_blocks(
+        cusp_csr_vector_kernel<VECTORS_PER_BLOCK, THREADS_PER_VECTOR, index_t,
+                               offset_t, mat_value_t, vec_x_value_t,
+                               vec_y_value_t, unary_func_t, binary_func1_t,
+                               binary_func2_t>,
+        THREADS_PER_BLOCK, (size_t)0);
+    const size_t NUM_BLOCKS = std::min<size_t>(
+        MAX_BLOCKS, DIVIDE_INTO(n_rows, VECTORS_PER_BLOCK));
+#else
+     const size_t NUM_BLOCKS = std::max<size_t>(1, DIVIDE_INTO(n_rows, VECTORS_PER_BLOCK));
+#endif
+    
     cusp_csr_vector_kernel<VECTORS_PER_BLOCK, THREADS_PER_VECTOR><<<NUM_BLOCKS, THREADS_PER_BLOCK>>>(
         n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
 }

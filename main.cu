@@ -4,11 +4,22 @@
 #include <numeric>
 #include <cmath>
 
+#include <cuda_runtime.h>
+
 #include "load.hpp"
-#include "common.cuh"
 #include "spmv.h"
 
 using namespace std;
+
+#define checkCudaErr(func)                                               \
+    {                                                                  \
+        cudaError_t status = (func);                                   \
+        if (status != cudaSuccess) {                                   \
+            printf("CUDA API failed at line %d with error: %s (%d)\n", \
+                   __LINE__, cudaGetErrorString(status), status);      \
+            exit(EXIT_FAILURE);                                        \
+        }                                                              \
+    }
 
 using index_t = int;
 using offset_t = int;
@@ -44,25 +55,25 @@ int main(int argc, char** argv) {
     value_t *dA_values;
     value_t *dX, *dY;
 
-    CHECK_CUDA(
+    checkCudaErr(
         cudaMalloc((void **)&dA_csrOffsets, (n_rows + 1) * sizeof(index_t)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_columns, nnz * sizeof(index_t)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_values, nnz * sizeof(value_t)));
+    checkCudaErr(cudaMalloc((void **)&dA_columns, nnz * sizeof(index_t)));
+    checkCudaErr(cudaMalloc((void **)&dA_values, nnz * sizeof(value_t)));
 
-    CHECK_CUDA(cudaMalloc((void **)&dX, n_cols * sizeof(value_t)));
-    CHECK_CUDA(cudaMalloc((void **)&dY, n_rows * sizeof(value_t)));
+    checkCudaErr(cudaMalloc((void **)&dX, n_cols * sizeof(value_t)));
+    checkCudaErr(cudaMalloc((void **)&dY, n_rows * sizeof(value_t)));
 
-    CHECK_CUDA(cudaMemcpy(dA_csrOffsets, csr.row_offsets.data(),
+    checkCudaErr(cudaMemcpy(dA_csrOffsets, csr.row_offsets.data(),
                           (n_rows + 1) * sizeof(index_t),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_columns, csr.column_indices.data(), nnz * sizeof(index_t),
+    checkCudaErr(cudaMemcpy(dA_columns, csr.column_indices.data(), nnz * sizeof(index_t),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_values, csr.nonzero_values.data(), nnz * sizeof(value_t),
+    checkCudaErr(cudaMemcpy(dA_values, csr.nonzero_values.data(), nnz * sizeof(value_t),
                           cudaMemcpyHostToDevice));
 
-    CHECK_CUDA(
+    checkCudaErr(
         cudaMemcpy(dX, vec_x.data(), n_cols * sizeof(value_t), cudaMemcpyHostToDevice));
-    CHECK_CUDA(
+    checkCudaErr(
         cudaMemcpy(dY, vec_y.data(), n_rows * sizeof(value_t), cudaMemcpyHostToDevice));
 
     //--------------------------------------------------------------------------
@@ -77,7 +88,7 @@ int main(int argc, char** argv) {
         //--------------------------------------------------------------------------
         // SpMV APIs
         SpMV(kind, n_rows, n_cols, nnz, dA_csrOffsets, dA_columns, dA_values, dX, dY);
-        CHECK_CUDA(cudaMemcpy(vec_y.data(), dY, n_rows * sizeof(value_t), cudaMemcpyDeviceToHost));
+        checkCudaErr(cudaMemcpy(vec_y.data(), dY, n_rows * sizeof(value_t), cudaMemcpyDeviceToHost));
 
         //--------------------------------------------------------------------------
         // device results check
@@ -106,11 +117,11 @@ int main(int argc, char** argv) {
 
     //--------------------------------------------------------------------------
     // device memory deallocation
-    CHECK_CUDA(cudaFree(dA_csrOffsets))
-    CHECK_CUDA(cudaFree(dA_columns))
-    CHECK_CUDA(cudaFree(dA_values))
-    CHECK_CUDA(cudaFree(dX))
-    CHECK_CUDA(cudaFree(dY))
+    checkCudaErr(cudaFree(dA_csrOffsets))
+    checkCudaErr(cudaFree(dA_columns))
+    checkCudaErr(cudaFree(dA_values))
+    checkCudaErr(cudaFree(dX))
+    checkCudaErr(cudaFree(dY))
 
     return EXIT_SUCCESS;
 }
