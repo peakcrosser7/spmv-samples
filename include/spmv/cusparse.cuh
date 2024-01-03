@@ -1,3 +1,8 @@
+/**
+ * cuSPARSE v11.70.5
+ * 
+*/
+
 #pragma once
 
 #include <cuda_runtime.h>
@@ -25,6 +30,17 @@
         }                                                                  \
     }
 
+template <typename T>
+cusparseIndexType_t cusparse_index = {};
+template <>
+cusparseIndexType_t cusparse_index<int> = CUSPARSE_INDEX_32I;
+
+template <typename T>
+cudaDataType_t cuda_data_type = {};
+template <>
+cudaDataType_t cuda_data_type<float> = CUDA_R_32F;
+template <>
+cudaDataType_t cuda_data_type<double> = CUDA_R_64F;
 
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
@@ -32,8 +48,8 @@ void SpMV_cusparse(index_t n_rows,  index_t n_cols, offset_t nnz,
     const offset_t *Ap, const index_t *Aj, const mat_value_t *Ax, 
     const vec_x_value_t *x, vec_y_value_t *y) {
 
-    const float alpha = 1.0f;
-    const float beta = 0.0f;
+    const vec_x_value_t alpha = 1.0f;
+    const vec_y_value_t beta = 0.0f;
 
     // cusparse上下文指针
     cusparseHandle_t handle = NULL;
@@ -49,25 +65,25 @@ void SpMV_cusparse(index_t n_rows,  index_t n_cols, offset_t nnz,
     CHECK_CUSPARSE(cusparseCreateCsr(
         &matA, n_rows, n_cols, nnz, const_cast<offset_t *>(Ap),
         const_cast<index_t *>(Aj), const_cast<mat_value_t *>(Ax),
-        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
-        CUDA_R_32F));
+        cusparse_index<offset_t>, cusparse_index<index_t>, CUSPARSE_INDEX_BASE_ZERO,
+        cuda_data_type<mat_value_t>));
 
     // Create dense vector X
     // `cusparseCreateDnVec()`:构建稠密向量描述符
-    CHECK_CUSPARSE(cusparseCreateDnVec(&vecX, n_cols, const_cast<mat_value_t *>(x), CUDA_R_32F));
+    CHECK_CUSPARSE(cusparseCreateDnVec(&vecX, n_cols, const_cast<mat_value_t *>(x), cuda_data_type<vec_x_value_t>));
     // Create dense vector y
-    CHECK_CUSPARSE(cusparseCreateDnVec(&vecY, n_rows, y, CUDA_R_32F));
+    CHECK_CUSPARSE(cusparseCreateDnVec(&vecY, n_rows, y, cuda_data_type<vec_y_value_t>));
     
     // allocate an external buffer if needed
     CHECK_CUSPARSE(cusparseSpMV_bufferSize(
         handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta,
-        vecY, CUDA_R_32F, CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize));
+        vecY, cuda_data_type<vec_y_value_t>, CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize));
     CHECK_CUDA(cudaMalloc(&dBuffer, bufferSize));
 
     // execute SpMV
     Timer::kernel_start();
     CHECK_CUSPARSE(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-                                &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+                                &alpha, matA, vecX, &beta, vecY, cuda_data_type<vec_y_value_t>,
                                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
     Timer::kernel_stop();
 
