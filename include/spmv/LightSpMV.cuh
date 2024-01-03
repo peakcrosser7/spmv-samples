@@ -2,6 +2,7 @@
  * LightSpMV v1.0
  * 
  * Reference: https://ieeexplore.ieee.org/document/7245713
+ * 			  https://lightspmv.sourceforge.net/homepage.htm#latest
  * 
 */
 
@@ -9,9 +10,8 @@
 
 #include <cstdint>
 
-#include "timer.hpp"
+#include "common.cuh"
 
-#define LIGHT_DEVICE 0
 
 #define MAX_NUM_THREADS_PER_BLOCK 1024
 
@@ -19,7 +19,7 @@
 #define USE_TEXTURE_MEMORY
 
 /*error check*/
-#define CudaCheckError() __cudaCheckError( __FILE__, __LINE__ )
+#define CudaCheckError() __cudaCheckError( __FILE__, __LINE__)
 inline void __cudaCheckError(const char* file, const int32_t line) {
 	cudaError err = cudaGetLastError();
 	if (cudaSuccess != err) {
@@ -58,21 +58,22 @@ __constant__ int32_t _cudaNumCols;
 
 /*macro to get the X value*/
 template <typename T>
-__device__ inline T
-VECTOR_GET(const cudaTextureObject_t vectorX, uint32_t index){}
+__device__ inline 
+T VECTOR_GET(const cudaTextureObject_t vectorX, uint32_t index){}
 
 template <>
-__device__ inline float 
-VECTOR_GET<float>(const cudaTextureObject_t vectorX, uint32_t index){
+__device__ inline 
+float VECTOR_GET<float>(const cudaTextureObject_t vectorX, uint32_t index){
     return tex1Dfetch<float>(vectorX, index);
 }
 
 template <>
-__device__ inline double 
-VECTOR_GET<double>(const cudaTextureObject_t vectorX, uint32_t index){
+__device__ inline 
+double VECTOR_GET<double>(const cudaTextureObject_t vectorX, uint32_t index){
 	/*load the data*/
     // cannot get correct result
 	// int2 v = tex1Dfetch<int2>(vectorX, index);
+
     int x = tex1Dfetch<int>(vectorX, index * 2);
     int y = tex1Dfetch<int>(vectorX, index * 2 + 1);
 
@@ -81,9 +82,29 @@ VECTOR_GET<double>(const cudaTextureObject_t vectorX, uint32_t index){
 }
 
 template <typename T>
-__device__ inline float 
-VECTOR_GET(const T* __restrict vectorX, uint32_t index){
+__device__ inline 
+float VECTOR_GET(const T* __restrict vectorX, uint32_t index){
 	return vectorX[index];
+}
+
+template <typename T>
+__device__ __forceinline__
+T shfl_down(T var, unsigned int delta, int width = 32) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700
+	return __shfl_down_sync(FULL_MASK, var, delta, width);
+#else
+	return __shfl_down(var, delta, width);
+#endif
+}
+
+template <typename T>
+__device__ __forceinline__
+T shfl(T var, int srcLane, int width = 32) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700
+	return __shfl_sync(FULL_MASK, var, srcLane, width);
+#else
+	return __shfl(var, srcLane, width);
+#endif
 }
 
 /// vector-based row dynamic distribution
@@ -108,7 +129,7 @@ __global__ void csrDynamicVector(
 		row = atomicAdd(cudaRowCounter, 1);
 	}
 	/*broadcast the value to other lanes from lane 0*/
-	row = __shfl_sync(0xffffffff, row, 0, THREADS_PER_VECTOR);
+	row = shfl(row, 0, THREADS_PER_VECTOR);
 
 	/*check the row range*/
 	while (row < _cudaNumRows) {
@@ -145,7 +166,7 @@ __global__ void csrDynamicVector(
 		}
 		/*intra-vector reduction*/
 		for (i = THREADS_PER_VECTOR >> 1; i > 0; i >>= 1) {
-			sum += __shfl_down_sync(0xffffffff, sum, i, THREADS_PER_VECTOR);
+			sum += shfl_down(sum, i, THREADS_PER_VECTOR);
 		}
 
 		/*save the results and get a new row*/
@@ -156,7 +177,7 @@ __global__ void csrDynamicVector(
 			/*get a new row index*/
 			row = atomicAdd(cudaRowCounter, 1);
 		}
-		row = __shfl_sync(0xffffffff, row, 0, THREADS_PER_VECTOR);
+		row = shfl(row, 0, THREADS_PER_VECTOR);
 	}/*while*/
 }
 
@@ -185,8 +206,7 @@ __global__ void csrDynamicWarp(
 		row = atomicAdd(cudaRowCounter, 32 / THREADS_PER_VECTOR);
 	}
 	/*broadcast the value to other threads in the same warp and compute the row index of each vector*/
-    // replace shfl by shfl_sync
-	row = __shfl_sync(0xffffffff, row, 0) + warpVectorId;
+	row = shfl(row, 0) + warpVectorId;
 
 	/*check the row range*/
 	while (row < _cudaNumRows) {
@@ -223,7 +243,7 @@ __global__ void csrDynamicWarp(
 		}
 		/*intra-vector reduction*/
 		for (i = THREADS_PER_VECTOR >> 1; i > 0; i >>= 1) {
-			sum += __shfl_down_sync(0xffffffff, sum, i, THREADS_PER_VECTOR);
+			sum += shfl_down(sum, i, THREADS_PER_VECTOR);
 		}
 
 		/*save the results and get a new row*/
@@ -237,7 +257,7 @@ __global__ void csrDynamicWarp(
 			row = atomicAdd(cudaRowCounter, 32 / THREADS_PER_VECTOR);
 		}
 		/*broadcast the row index to the other threads in the same warp and compute the row index of each vetor*/
-		row = __shfl_sync(0xffffffff, row, 0) + warpVectorId;
+		row = shfl(row, 0) + warpVectorId;
 
 	}/*while*/
 }
@@ -249,9 +269,6 @@ void LightSpMV_preprocess(
     
     // set device cache
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-    CudaCheckError();
-
-    cudaSetDevice(LIGHT_DEVICE);
     CudaCheckError();
 
     cudaMalloc(&_cudaRowCounters, sizeof(index_t));
@@ -288,6 +305,16 @@ void LightSpMV_preprocess(
 #endif
 }
 
+template <typename index_t>
+void LightSpMV_postprocess(index_t* _cudaRowCounters, cudaTextureObject_t& _texVectorX) {
+#ifdef USE_TEXTURE_MEMORY
+	cudaDestroyTextureObject(_texVectorX);
+	CudaCheckError();
+#endif
+	cudaFree(_cudaRowCounters);
+	CudaCheckError();
+}
+
 template <uint32_t THREADS_PER_VECTOR, uint32_t MAX_NUM_VECTORS_PER_BLOCK,
           typename... args_t>
 void csrDynamic(std::true_type, int32_t numThreadsPerBlock,
@@ -320,7 +347,7 @@ void LightSpMV_invoke_kernel(
     int32_t numThreadsPerBlock;
     int32_t numThreadBlocks;
     /*get the number of threads per block*/
-    getKernelGridInfo(LIGHT_DEVICE, numThreadsPerBlock, numThreadBlocks);
+    getKernelGridInfo(USED_DEVICE, numThreadsPerBlock, numThreadBlocks);
 
 	/*invoke the kernel*/
     Timer::kernel_start();
@@ -363,6 +390,8 @@ void SpMV_light_vector(
 #else
     LightSpMV_invoke_kernel<std::true_type>(n_rows, nnz, _cudaRowCounters, Ap, Aj, Ax, x, y);
 #endif
+
+	LightSpMV_postprocess(_cudaRowCounters, _texVectorX);
 }
 
 // LightSpMV Warp-level Dynamic Row Distribution
@@ -382,5 +411,7 @@ void SpMV_light_warp(
 #else
     LightSpMV_invoke_kernel<std::false_type>(n_rows, nnz, _cudaRowCounters, Ap, Aj, Ax, x, y);
 #endif
+
+	LightSpMV_postprocess(_cudaRowCounters, _texVectorX);
 }
 

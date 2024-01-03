@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include "./common.cuh"
+#include "./utils.cuh"
+
 
 template <unsigned VECTORS_PER_BLOCK, unsigned THREADS_PER_VECTOR,
           typename index_t, typename offset_t, typename mat_value_t,

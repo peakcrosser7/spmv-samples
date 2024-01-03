@@ -1,16 +1,7 @@
 #pragma once
 
-#include <cuda_runtime.h>
+#include "common.cuh"
 
-#define CHECK_CUDA(func)                                               \
-    {                                                                  \
-        cudaError_t status = (func);                                   \
-        if (status != cudaSuccess) {                                   \
-            printf("CUDA API failed at line %d with error: %s (%d)\n", \
-                   __LINE__, cudaGetErrorString(status), status);      \
-            exit(EXIT_FAILURE);                                        \
-        }                                                              \
-    }
 
 template <typename T>
 class ConstFunctor {
@@ -43,7 +34,6 @@ struct MultFunctor {
 };
 
 
-#define FULL_MASK 0xffffffff
 
 template <unsigned size, typename T>
 __device__ __forceinline__
@@ -277,13 +267,11 @@ size_t max_active_blocks(KernelFunction kernel, const size_t cta_size,
                          const size_t dynamic_smem_bytes) {
     
     cudaFuncAttributes attributes;
-    CHECK_CUDA(cudaFuncGetAttributes(&attributes, kernel));
+    checkCudaErr(cudaFuncGetAttributes(&attributes, kernel));
     cudaDeviceProp properties;
-    CHECK_CUDA(cudaGetDeviceProperties(&properties, CUSP_DEVICE));
+    checkCudaErr(cudaGetDeviceProperties(&properties, USED_DEVICE));
 
     return properties.multiProcessorCount *
            max_active_blocks_per_multiprocessor(
                properties, attributes, cta_size, dynamic_smem_bytes);
 }
-
-#undef CHECK_CUDA

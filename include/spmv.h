@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#include "timer.hpp"
+#include "common.cuh"
 #include "spmv/cpu_navie.hpp"
 #include "spmv/cusparse.cuh"
 #include "spmv/cusp/cusp.cuh"

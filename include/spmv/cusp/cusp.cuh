@@ -7,10 +7,14 @@
 
 #pragma once
 
-#include "./common.cuh"
+#include "./utils.cuh"
 
 // use `__syncwarp()` -- CC>=7.0
-// #define ENABLE_WARPSYNC
+#define USE_SYNCWARP
+
+#if defined(USE_SYNCWARP) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 700)
+#define ENABLE_WARPSYNC
+#endif
 
 template <unsigned VECTORS_PER_BLOCK, unsigned THREADS_PER_VECTOR,
           typename index_t, typename offset_t, typename mat_value_t,

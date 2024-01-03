@@ -11,16 +11,6 @@
 
 using namespace std;
 
-#define checkCudaErr(func)                                               \
-    {                                                                  \
-        cudaError_t status = (func);                                   \
-        if (status != cudaSuccess) {                                   \
-            printf("CUDA API failed at line %d with error: %s (%d)\n", \
-                   __LINE__, cudaGetErrorString(status), status);      \
-            exit(EXIT_FAILURE);                                        \
-        }                                                              \
-    }
-
 using index_t = int;
 using offset_t = int;
 using value_t = float;
@@ -54,6 +44,9 @@ int main(int argc, char** argv) {
     index_t *dA_csrOffsets, *dA_columns;
     value_t *dA_values;
     value_t *dX, *dY;
+
+
+    checkCudaErr(cudaSetDevice(USED_DEVICE));
 
     checkCudaErr(
         cudaMalloc((void **)&dA_csrOffsets, (n_rows + 1) * sizeof(index_t)));
@@ -117,11 +110,11 @@ int main(int argc, char** argv) {
 
     //--------------------------------------------------------------------------
     // device memory deallocation
-    checkCudaErr(cudaFree(dA_csrOffsets))
-    checkCudaErr(cudaFree(dA_columns))
-    checkCudaErr(cudaFree(dA_values))
-    checkCudaErr(cudaFree(dX))
-    checkCudaErr(cudaFree(dY))
+    checkCudaErr(cudaFree(dA_csrOffsets));
+    checkCudaErr(cudaFree(dA_columns));
+    checkCudaErr(cudaFree(dA_values));
+    checkCudaErr(cudaFree(dX));
+    checkCudaErr(cudaFree(dY));
 
     return EXIT_SUCCESS;
 }
