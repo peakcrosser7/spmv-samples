@@ -1,3 +1,8 @@
+/**
+ * cusplibrary v0.4.0
+ * 
+*/
+
 #pragma once
 
 #include "./common.cuh"
@@ -92,19 +97,31 @@ void cusp_warp_reduce(index_t n_rows, offset_t nnz,
     const offset_t nnz_per_row = nnz / n_rows;
 
     if (nnz_per_row <=  2) {
-        __cusp_warp_reduce<2>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        Timer::kernel_start();
+        __cusp_csr_vector<2>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <=  4) {
-        __cusp_warp_reduce<4>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        Timer::kernel_start();
+        __cusp_csr_vector<4>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <=  8) {
-        __cusp_warp_reduce<8>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        Timer::kernel_start();
+        __cusp_csr_vector<8>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <= 16) {
-        __cusp_warp_reduce<16>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        Timer::kernel_start();
+        __cusp_csr_vector<16>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
 

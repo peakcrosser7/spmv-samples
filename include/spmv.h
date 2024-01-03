@@ -9,14 +9,16 @@
 #include "spmv/cusp/cusp.cuh"
 #include "spmv/cusp/cusp_warp_reduce.cuh"
 #include "spmv/cusp/cusp_warp_read_reduce.cuh"
+#include "spmv/LightSpMV.cuh"
 
 /// SPMV kind strings and its function
-#define SPMV_KINDS                  \
-    X("cusparse", SpMV_cusparse)    \
-    X("cusp", SpMV_cusp_origin)     \
-    X("cusp1", SpMV_cusp_warp_reduce) \
-    X("cusp2", SpMV_cusp_warp_read_reduce)       
-
+#define SPMV_KINDS                                                             \
+    X("cusparse", SpMV_cusparse)                                               \
+    X("cusp", SpMV_cusp_origin)                                                \
+    X("cusp1", SpMV_cusp_warp_reduce)                                          \
+    X("cusp2", SpMV_cusp_warp_read_reduce)                                     \
+    X("light_vec", SpMV_light_vector)                                          \
+    X("light_warp", SpMV_light_warp)
 
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>

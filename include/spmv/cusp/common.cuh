@@ -56,7 +56,7 @@ T WarpReduceSum(T sum) {
     return sum;   
 }
 
-#define USED_DEVICE 0
+#define CUSP_DEVICE 0
 
 /// use `max_active_blocks()` function in cusp to get NUM_BLOCKS
 /// but got bad performance
@@ -279,7 +279,7 @@ size_t max_active_blocks(KernelFunction kernel, const size_t cta_size,
     cudaFuncAttributes attributes;
     CHECK_CUDA(cudaFuncGetAttributes(&attributes, kernel));
     cudaDeviceProp properties;
-    CHECK_CUDA(cudaGetDeviceProperties(&properties, USED_DEVICE));
+    CHECK_CUDA(cudaGetDeviceProperties(&properties, CUSP_DEVICE));
 
     return properties.multiProcessorCount *
            max_active_blocks_per_multiprocessor(

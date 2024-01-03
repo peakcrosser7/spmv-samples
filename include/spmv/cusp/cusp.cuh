@@ -1,3 +1,10 @@
+/**
+ * cusplibrary v0.4.0
+ * 
+ * Reference: https://github.com/cusplibrary/cusplibrary/blob/main/cusp/system/cuda/detail/multiply/csr_vector_spmv.h
+ * 
+*/
+
 #pragma once
 
 #include "./common.cuh"
@@ -176,19 +183,31 @@ void cusp_csr_vector(index_t n_rows, offset_t nnz,
     const offset_t nnz_per_row = nnz / n_rows;
 
     if (nnz_per_row <=  2) {
+        Timer::kernel_start();
         __cusp_csr_vector<2>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <=  4) {
+        Timer::kernel_start();
         __cusp_csr_vector<4>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <=  8) {
+        Timer::kernel_start();
         __cusp_csr_vector<8>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
     if (nnz_per_row <= 16) {
+        Timer::kernel_start();
         __cusp_csr_vector<16>(n_rows, Ap, Aj, Ax, x, y, initialize, combine, reduce);
+        cudaDeviceSynchronize();
+        Timer::kernel_stop();
         return;
     }
 
