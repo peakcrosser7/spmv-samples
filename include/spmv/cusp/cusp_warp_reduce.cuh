@@ -132,7 +132,7 @@ void cusp_warp_reduce(index_t n_rows, offset_t nnz,
     Timer::kernel_stop();
 }
 
-// use warp shuffle instructions to reduce
+/// cusp CSR-vector SpMV with warp shuffle instruction to reduce
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
 void SpMV_cusp_warp_reduce(

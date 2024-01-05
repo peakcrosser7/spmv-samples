@@ -221,6 +221,7 @@ void cusp_csr_vector(index_t n_rows, offset_t nnz,
     Timer::kernel_stop();
 }
 
+/// cusp CSR-vector SpMV
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
 void SpMV_cusp_origin(

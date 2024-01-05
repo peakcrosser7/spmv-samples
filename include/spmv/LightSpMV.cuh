@@ -373,7 +373,7 @@ void LightSpMV_invoke_kernel(
     Timer::kernel_stop();
 }
 
-// LightSpMV Vector-level Dynamic Row Distribution
+/// LightSpMV with Vector-level Dynamic Row Distribution
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
 void SpMV_light_vector(
@@ -394,7 +394,7 @@ void SpMV_light_vector(
 	LightSpMV_postprocess(_cudaRowCounters, _texVectorX);
 }
 
-// LightSpMV Warp-level Dynamic Row Distribution
+/// LightSpMV with Warp-level Dynamic Row Distribution
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
 void SpMV_light_warp(

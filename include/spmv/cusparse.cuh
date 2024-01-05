@@ -32,6 +32,7 @@ cudaDataType_t CudaDataType<float> = CUDA_R_32F;
 template <>
 cudaDataType_t CudaDataType<double> = CUDA_R_64F;
 
+/// cuSPARSE SpMV
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
 void SpMV_cusparse(index_t n_rows,  index_t n_cols, offset_t nnz,
