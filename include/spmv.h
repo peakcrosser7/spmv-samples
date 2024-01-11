@@ -11,6 +11,7 @@
 #include "spmv/cusp/cusp_warp_read_reduce.cuh"
 #include "spmv/LightSpMV.cuh"
 #include "spmv/cub_merge.cuh"
+#include "spmv/merge_based/merge_based.cuh"
 
 /// SPMV kind strings and its function
 #define SPMV_KINDS                                                             \
@@ -20,7 +21,8 @@
     X("cusp2", SpMV_cusp_warp_read_reduce)                                     \
     X("light_vec", SpMV_light_vector)                                          \
     X("light_warp", SpMV_light_warp)                                           \
-    X("cub_merge", SpMV_cub_merge_based)
+    X("cub_merge", SpMV_cub_merge_based)                                       \
+    X("merge", SpMV_merge_based)
 
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>
