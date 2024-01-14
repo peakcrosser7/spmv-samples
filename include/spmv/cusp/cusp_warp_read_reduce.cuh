@@ -24,8 +24,14 @@ cusp_warp_read_reduce_kernel(index_t n_rows,
     const offset_t row_id   = thread_id   /  THREADS_PER_VECTOR;               // global vector index
     
     if (row_id < n_rows) {        
-        offset_t row_start = Ap[row_id];
-        offset_t row_end = Ap[row_id + 1];
+        offset_t row_offsets[2];
+
+        if (thread_lane < 2) {
+            row_offsets[thread_lane] = Ap[row_id + thread_lane];
+        }
+        
+        offset_t row_start = __shfl_sync(FULL_MASK, row_offsets[0], row_id * THREADS_PER_VECTOR);
+        offset_t row_end = __shfl_sync(FULL_MASK, row_offsets[1], row_id * THREADS_PER_VECTOR + 1);
 
         // initialize local sum
         vec_y_value_t sum = (thread_lane == 0) ? initialize(y[row_id]) : vec_y_value_t(0);
