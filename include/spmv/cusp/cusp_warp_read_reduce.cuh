@@ -55,7 +55,7 @@ cusp_warp_read_reduce_kernel(index_t n_rows,
         }
 
         // reduce local sums to row sum
-        sum = WarpReduceSum<THREADS_PER_VECTOR>(sum);
+        sum = WarpReduce<THREADS_PER_VECTOR>(sum, reduce);
 
         // first thread writes the result
         if (thread_lane == 0) {

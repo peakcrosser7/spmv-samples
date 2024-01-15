@@ -35,14 +35,14 @@ struct MultFunctor {
 
 
 
-template <unsigned size, typename T>
+template <unsigned size, typename T, typename binary_func_t>
 __device__ __forceinline__
-T WarpReduceSum(T sum) {
-    if constexpr (size >= 32) sum += __shfl_down_sync(FULL_MASK, sum, 16); // 0-16, 1-17, 2-18, etc.
-    if constexpr (size >= 16) sum += __shfl_down_sync(FULL_MASK, sum, 8);  // 0-8, 1-9, 2-10, etc.
-    if constexpr (size >= 8)  sum += __shfl_down_sync(FULL_MASK, sum, 4);  // 0-4, 1-5, 2-6, etc.
-    if constexpr (size >= 4)  sum += __shfl_down_sync(FULL_MASK, sum, 2);  // 0-2, 1-3, 4-6, 5-7, etc.
-    if constexpr (size >= 2)  sum += __shfl_down_sync(FULL_MASK, sum, 1);  // 0-1, 2-3, 4-5, etc.
+T WarpReduce(T sum, binary_func_t reduce) {
+    if constexpr (size >= 32) sum = reduce(sum, __shfl_down_sync(FULL_MASK, sum, 16)); // 0-16, 1-17, 2-18, etc.
+    if constexpr (size >= 16) sum = reduce(sum, __shfl_down_sync(FULL_MASK, sum, 8));  // 0-8, 1-9, 2-10, etc.
+    if constexpr (size >= 8)  sum = reduce(sum, __shfl_down_sync(FULL_MASK, sum, 4));  // 0-4, 1-5, 2-6, etc.
+    if constexpr (size >= 4)  sum = reduce(sum, __shfl_down_sync(FULL_MASK, sum, 2));  // 0-2, 1-3, 4-6, 5-7, etc.
+    if constexpr (size >= 2)  sum = reduce(sum, __shfl_down_sync(FULL_MASK, sum, 1));  // 0-1, 2-3, 4-5, etc.
     return sum;   
 }
 

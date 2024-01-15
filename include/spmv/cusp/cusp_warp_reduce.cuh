@@ -29,7 +29,7 @@ cusp_warp_reduce_kernel(index_t n_rows,
 
         // initialize local sum
         vec_y_value_t sum = (thread_lane == 0) ? initialize(y[row_id]) : vec_y_value_t(0);
-
+        
         if (THREADS_PER_VECTOR == 32 && row_end - row_start > 32) {
             // ensure aligned memory access to Aj and Ax
 
@@ -49,7 +49,7 @@ cusp_warp_reduce_kernel(index_t n_rows,
         }
 
         // reduce local sums to row sum
-        sum = WarpReduceSum<THREADS_PER_VECTOR>(sum);
+        sum = WarpReduce<THREADS_PER_VECTOR>(sum, reduce);
 
         // first thread writes the result
         if (thread_lane == 0) {
