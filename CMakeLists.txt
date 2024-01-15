@@ -13,6 +13,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr")
+
 set(CMAKE_CUDA_ARCHITECTURES 70)
 if(NOT CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 70)
@@ -38,3 +40,5 @@ macro (add_cuda_exec exec_name exec_file)
 endmacro (add_cuda_exec)
 
 add_cuda_exec(spmv main.cu)
+add_cuda_exec(tmp tmp.cu)
+add_cuda_exec(genl genl.cu)

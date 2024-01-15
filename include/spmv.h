@@ -12,6 +12,7 @@
 #include "spmv/LightSpMV.cuh"
 #include "spmv/cub_merge.cuh"
 #include "spmv/merge_based/merge_based.cuh"
+#include "spmv/merge_genl/merge_genl.cuh"
 
 /// SPMV kind strings and its function
 #define SPMV_KINDS                                                             \
@@ -22,7 +23,8 @@
     X("light_vec", SpMV_light_vector)                                          \
     X("light_warp", SpMV_light_warp)                                           \
     X("cub_merge", SpMV_cub_merge_based)                                       \
-    X("merge", SpMV_merge_based)
+    X("merge", SpMV_merge_based)                                               \
+    X("merge_genl", SpMV_merge_based_generalized)
 
 template <typename index_t, typename offset_t, typename mat_value_t,
           typename vec_x_value_t, typename vec_y_value_t>

@@ -34,6 +34,7 @@
 #pragma once
 
 #include <iterator>
+#include <type_traits>
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
@@ -44,7 +45,7 @@
 #include <cub/iterator/constant_input_iterator.cuh>
 
 
-namespace merge_spmv {
+namespace merge_genl {
 
 // /// Optional outer namespace(s)
 // CUB_NS_PREFIX
@@ -52,6 +53,30 @@ namespace merge_spmv {
 // /// CUB namespace
 // namespace cub {
 
+template <typename T, typename ReductionOpT, 
+          typename std::enable_if_t<std::is_same_v<T, int> || std::is_same_v<T, unsigned>>* = nullptr>
+__device__ void AtomicReduce(T *address, T val, ReductionOpT reduce) {
+   T old = *address, assumed;
+   do {
+      assumed = old;
+      old = atomicCAS(address, assumed, reduce(val, assumed));
+   } while (assumed != old);    
+}
+
+template <typename T, typename ReductionOpT,
+          typename std::enable_if_t<sizeof(T) == 4>* = nullptr>
+__device__ void AtomicReduce(T *address, T val, ReductionOpT reduce) {
+    int * addr_as_int = reinterpret_cast<int *>(address);
+    int old = *address, assumed{};
+    T& assumed_T_ref = reinterpret_cast<T &>(assumed);
+    T new_val{};
+    int& new_val_int_ref = reinterpret_cast<int &>(new_val);
+    do {
+       assumed = old;
+       new_val = reduce(val, assumed_T_ref);
+       old = atomicCAS(addr_as_int, assumed, new_val_int_ref);
+    } while (assumed != old);
+}
 
 /******************************************************************************
  * Tuning policy types
@@ -122,6 +147,7 @@ struct AgentSegmentFixup
                                  cub::Equals<ValueT, int>::VALUE ||
                                  cub::Equals<ValueT, unsigned int>::VALUE ||
                                  cub::Equals<ValueT, unsigned long long>::VALUE),
+        // USE_ATOMIC_FIXUP    = false,
 
         // Whether or not the scan operation has a zero-valued identity value (true if we're performing addition on a primitive type)
         HAS_IDENTITY_ZERO   = (cub::Equals<ReductionOpT, cub::Sum>::VALUE) && (cub::Traits<ValueT>::PRIMITIVE),
@@ -140,7 +166,7 @@ struct AgentSegmentFixup
         WrappedFixupInputIteratorT;
 
     // Reduce-value-by-segment scan operator
-    typedef cub::ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
+    typedef cub::ReduceByKeyOp<ReductionOpT> ReduceBySegmentOpT;
 
     // Parameterized BlockLoad type for pairs
     typedef cub::BlockLoad<
@@ -254,7 +280,7 @@ struct AgentSegmentFixup
             ValueT* d_scatter = d_aggregates_out + pairs[ITEM - 1].key;
             if (pairs[ITEM].key != pairs[ITEM - 1].key) {   // 与上一元素key不同,即对应矩阵的不同行
                 // 将矩阵上一行的结果原子累加到输出
-                atomicAdd(d_scatter, pairs[ITEM - 1].value);
+                AtomicReduce(d_scatter, pairs[ITEM - 1].value, reduction_op);
             } else {    // 与上一元素key相同,对应矩阵的同一行
                 // 将上一元素值累加到当前元素
                 pairs[ITEM].value = reduction_op(pairs[ITEM - 1].value, pairs[ITEM].value);
@@ -266,7 +292,7 @@ struct AgentSegmentFixup
         // 不为最后一个线程块分片或者最后一个元素有key值(有效元素)
         if ((!IS_LAST_TILE) || (pairs[ITEMS_PER_THREAD - 1].key >= 0)) {
             // 写入输出内存
-            atomicAdd(d_scatter, pairs[ITEMS_PER_THREAD - 1].value);
+            AtomicReduce(d_scatter, pairs[ITEMS_PER_THREAD - 1].value, reduction_op);
         }
     }
 
@@ -387,4 +413,4 @@ struct AgentSegmentFixup
 // }               // CUB namespace
 // CUB_NS_POSTFIX  // Optional outer namespace(s)
 
-}   // namespace merge_spmv
+}   // namespace merge_genl

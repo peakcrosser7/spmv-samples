@@ -34,7 +34,8 @@ void SpMV_cub_merge_based(
                                    const_cast<mat_value_t *>(Ax), 
                                    const_cast<offset_t *>(Ap), 
                                    const_cast<index_t *>(Aj), 
-                                   const_cast<vec_x_value_t *>(x), y, n_rows, n_cols, nnz,
+                                   const_cast<vec_x_value_t *>(x), 
+                                   y, n_rows, n_cols, nnz,
                                    (cudaStream_t)0, false));
 
     // Allocate
@@ -45,7 +46,8 @@ void SpMV_cub_merge_based(
                                    const_cast<mat_value_t *>(Ax), 
                                    const_cast<offset_t *>(Ap), 
                                    const_cast<index_t *>(Aj), 
-                                   const_cast<vec_x_value_t *>(x), y, n_rows, n_cols, nnz,
+                                   const_cast<vec_x_value_t *>(x), 
+                                   y, n_rows, n_cols, nnz,
                                    (cudaStream_t)0, false));
     Timer::kernel_stop();
 }

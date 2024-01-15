@@ -15,7 +15,7 @@ using index_t = int;
 using offset_t = int;
 using value_t = float;
 
-constexpr int TEST_TIMES = 20;
+constexpr int TEST_TIMES = 2000;
 
 int main(int argc, char** argv) {
     if (argc < 3) {
