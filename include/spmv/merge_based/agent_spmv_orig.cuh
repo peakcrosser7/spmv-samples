@@ -98,8 +98,7 @@ struct AgentSpmvPolicy {
 template <
     typename        ValueT,              ///< Matrix and vector value type
     typename        OffsetT>             ///< Signed integer type for sequence offsets
-struct SpmvParams
-{
+struct SpmvParams {
     ValueT*         d_values;            ///< Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
     OffsetT*        d_row_end_offsets;   ///< Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
     OffsetT*        d_column_indices;    ///< Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
@@ -212,8 +211,7 @@ struct AgentSpmv
         BlockExchangeT;
 
     /// Merge item type (either a non-zero value or a row-end offset)
-    union MergeItem
-    {
+    union MergeItem {
         // Value type to pair with index type OffsetT (NullType if loading values directly during merge)
         typedef typename cub::If<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, cub::NullType, ValueT>::Type MergeValueT;
 
@@ -222,8 +220,7 @@ struct AgentSpmv
     };
 
     /// Shared memory type required by this thread block
-    struct _TempStorage
-    {
+    struct _TempStorage {
         CoordinateT tile_coords[2];
 
         union

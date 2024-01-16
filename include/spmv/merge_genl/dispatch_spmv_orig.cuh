@@ -78,8 +78,7 @@ __global__ void DeviceSpmv1ColKernel(
                offset_t, 
                mat_value_t, 
                vec_x_value_t,
-               vec_y_value_t, 
-               functor_t> spmv_params)                ///< [in] SpMV input parameter bundle
+               vec_y_value_t> spmv_params)                ///< [in] SpMV input parameter bundle
 {
     using VectorValueIteratorT = cub::CacheModifiedInputIterator<
         AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, 
@@ -87,8 +86,7 @@ __global__ void DeviceSpmv1ColKernel(
         index_t>;
     using SpmvParamsT = SpmvParams<
         index_t, offset_t, 
-        mat_value_t, vec_x_value_t, vec_y_value_t, 
-        functor_t>;
+        mat_value_t, vec_x_value_t, vec_y_value_t>;
 
     VectorValueIteratorT wrapped_vector_x(spmv_params.d_vector_x);
 
@@ -181,8 +179,7 @@ __global__ void DeviceSpmvKernel(
                offset_t, 
                mat_value_t, 
                vec_x_value_t,
-               vec_y_value_t, 
-               functor_t>                       spmv_params,                ///< [in] SpMV input parameter bundle
+               vec_y_value_t>                       spmv_params,                ///< [in] SpMV input parameter bundle
     CoordinateT*                                d_tile_coordinates,         ///< [in] Pointer to the temporary array of tile starting coordinates
     cub::KeyValuePair<offset_t, vec_y_value_t>* d_tile_carry_pairs,         ///< [out] Pointer to the temporary array carry-out dot product row-ids, one per block
     int                                         num_tiles,                  ///< [in] Number of merge tiles
@@ -277,8 +274,7 @@ struct DispatchSpmv {
                        offset_t, 
                        mat_value_t, 
                        vec_x_value_t,
-                       vec_y_value_t, 
-                       functor_t> SpmvParamsT;
+                       vec_y_value_t> SpmvParamsT;
 
     // 2D merge path coordinate type
     typedef typename cub::CubVector<offset_t, 2>::Type CoordinateT;

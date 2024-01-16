@@ -103,20 +103,16 @@ template <
     typename        offset_t,             ///< Signed integer type for sequence offsets
     typename        mat_value_t,
     typename        vec_x_value_t,
-    typename        vec_y_value_t,
-    typename        functor_t>
-struct SpmvParams
-{
-    mat_value_t*         d_values;            ///< Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
-    offset_t*        d_row_end_offsets;   ///< Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
-    index_t*        d_column_indices;    ///< Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
-    vec_x_value_t*         d_vector_x;          ///< Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
-    vec_y_value_t*         d_vector_y;          ///< Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
-    index_t             num_rows;            ///< Number of rows of matrix <b>A</b>.
-    index_t             num_cols;            ///< Number of columns of matrix <b>A</b>.
-    offset_t             num_nonzeros;        ///< Number of nonzero elements of matrix <b>A</b>.
-    vec_x_value_t          alpha;               ///< Alpha multiplicand
-    vec_y_value_t          beta;                ///< Beta addend-multiplicand
+    typename        vec_y_value_t>
+struct SpmvParams {
+    mat_value_t*      d_values;            ///< Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
+    offset_t*         d_row_end_offsets;   ///< Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
+    index_t*          d_column_indices;    ///< Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
+    vec_x_value_t*    d_vector_x;          ///< Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
+    vec_y_value_t*    d_vector_y;          ///< Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
+    index_t           num_rows;            ///< Number of rows of matrix <b>A</b>.
+    index_t           num_cols;            ///< Number of columns of matrix <b>A</b>.
+    offset_t          num_nonzeros;        ///< Number of nonzero elements of matrix <b>A</b>.
 };
 
 template <typename functor_t, typename T>
@@ -138,8 +134,6 @@ template <
     typename        vec_x_value_t,
     typename        vec_y_value_t,
     typename        functor_t,
-    // bool         HAS_ALPHA,                  ///< Whether the input parameter \p alpha is 1
-    // bool         HAS_BETA,                   ///< Whether the input parameter \p beta is 0
     int             PTX_ARCH = CUB_PTX_ARCH>    ///< PTX compute capability
 struct AgentSpmv
 {
@@ -221,8 +215,7 @@ struct AgentSpmv
             ITEMS_PER_THREAD>;
 
     /// Merge item type (either a non-zero value or a row-end offset)
-    union MergeItem
-    {
+    union MergeItem {
         // Value type to pair with index type OffsetT (NullType if loading values directly during merge)
         typedef typename cub::If<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, cub::NullType, vec_y_value_t>::Type MergeValueT;
 
@@ -231,8 +224,7 @@ struct AgentSpmv
     };
 
     /// Shared memory type required by this thread block
-    struct _TempStorage
-    {
+    struct _TempStorage {
         CoordinateT tile_coords[2];
 
         union
@@ -269,8 +261,7 @@ struct AgentSpmv
                offset_t, 
                mat_value_t, 
                vec_x_value_t,
-               vec_y_value_t, 
-               functor_t>&          spmv_params;
+               vec_y_value_t>&          spmv_params;
 
     MatValueIteratorT               wd_values;            ///< Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
     RowOffsetsIteratorT             wd_row_end_offsets;   ///< Wrapped Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
@@ -292,8 +283,7 @@ struct AgentSpmv
                offset_t, 
                mat_value_t, 
                vec_x_value_t,
-               vec_y_value_t, 
-               functor_t>&              spmv_params)            ///< SpMV input parameter bundle
+               vec_y_value_t>&              spmv_params)            ///< SpMV input parameter bundle
     :
         temp_storage(temp_storage.Alias()),
         spmv_params(spmv_params),
@@ -439,16 +429,6 @@ struct AgentSpmv
                         // 当前元素一定是该行的最后一个元素,因此只会累加一次
                         scan_segment[ITEM].value = functor_t::reduce(scan_item.value, scan_segment[ITEM].value);
                     }
-
-                    // if (HAS_ALPHA) {
-                    //     scan_segment[ITEM].value *= spmv_params.alpha;
-                    // }
-
-                    // if (HAS_BETA) {
-                    //     // Update the output vector element
-                    //     ValueT addend = spmv_params.beta * wd_vector_y[tile_start_coord.x + scan_segment[ITEM].key];
-                    //     scan_segment[ITEM].value += addend;
-                    // }
 
                     // Set the output vector element
                     // 将结果直接写回vector Y的全局内存中

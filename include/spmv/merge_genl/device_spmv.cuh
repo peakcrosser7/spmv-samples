@@ -153,8 +153,7 @@ struct DeviceSpmv
                 offset_t, 
                 mat_value_t, 
                 vec_x_value_t,
-                vec_y_value_t, 
-                functor_t> spmv_params;
+                vec_y_value_t> spmv_params;
         spmv_params.d_values             = d_values;
         spmv_params.d_row_end_offsets    = d_row_offsets + 1;
         spmv_params.d_column_indices     = d_column_indices;
@@ -163,8 +162,6 @@ struct DeviceSpmv
         spmv_params.num_rows             = num_rows;
         spmv_params.num_cols             = num_cols;
         spmv_params.num_nonzeros         = num_nonzeros;
-        spmv_params.alpha                = 1.0;
-        spmv_params.beta                 = 0.0;
 
         return DispatchSpmv<index_t, 
                 offset_t, 
