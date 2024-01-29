@@ -305,7 +305,7 @@ struct AgentSpmv
 
         // Gather the row end-offsets for the merge tile into shared memory
         // 将线程块分片每行的终止偏移写入共享内存
-        for (int item = threadIdx.x; item <= tile_num_rows; item += BLOCK_THREADS) {
+        for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS) {
             const OffsetT offset =
               (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item),
                          static_cast<OffsetT>(spmv_params.num_rows - 1));
@@ -540,8 +540,11 @@ struct AgentSpmv
         // Gather the row end-offsets for the merge tile into shared memory
         // 将线程块分片每行的终止偏移写入共享内存
         #pragma unroll 1    // 使用1表示循环展开1次,即不展开
-        for (int item = threadIdx.x; item <= tile_num_rows; item += BLOCK_THREADS) {
-            s_tile_row_end_offsets[item] = wd_row_end_offsets[tile_start_coord.x + item];
+        for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS) {
+            const OffsetT offset =
+              (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item),
+                         static_cast<OffsetT>(spmv_params.num_rows - 1));
+            s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
         }
 
         __syncthreads();

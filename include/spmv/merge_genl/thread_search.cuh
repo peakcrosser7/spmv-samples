@@ -25,7 +25,7 @@ void SearchMergePath(
     typedef typename std::iterator_traits<AIteratorT>::value_type T;
 
     // 二分搜索最小索引,初始化为对角线的a方向最小索引
-    OffsetT split_min = CUB_MAX(diagonal - b_len, 0);
+    OffsetT split_min = CUB_MAX(static_cast<int>(diagonal - b_len), 0);
     // 二分搜索最大索引,初始化为对角线的a方向最大索引
     OffsetT split_max = CUB_MIN(diagonal, a_len);
 

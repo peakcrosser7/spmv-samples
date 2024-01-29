@@ -138,8 +138,7 @@ __global__ void DeviceSpmvSearchKernel(
 
     // Find the starting coordinate for all tiles (plus the end coordinate of the last one)
     OffsetT tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if (tile_idx < num_merge_tiles + 1)
-    {
+    if (tile_idx < num_merge_tiles + 1) {
         OffsetT                              diagonal = (tile_idx * TILE_ITEMS);
         CoordinateT                          tile_coordinate;
         cub::CountingInputIterator<OffsetT>  nonzero_indices(0);
@@ -579,8 +578,10 @@ struct DispatchSpmv {
     {
         cudaError error = cudaSuccess;
         do {
-            if (spmv_params.num_rows < 0 || spmv_params.num_cols < 0) {
-              return cudaErrorInvalidValue;
+            if constexpr (std::is_signed_v<index_t>) {
+                if (spmv_params.num_rows < 0 || spmv_params.num_cols < 0) {
+                    return cudaErrorInvalidValue;
+                }
             }
 
             if (spmv_params.num_rows == 0 || spmv_params.num_cols == 0) { // Empty problem, no-op.

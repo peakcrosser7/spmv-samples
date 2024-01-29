@@ -53,9 +53,12 @@ namespace merge_genl {
 // /// CUB namespace
 // namespace cub {
 
-template <typename T, typename ReductionOpT, 
-          typename std::enable_if_t<std::is_same_v<T, int> || std::is_same_v<T, unsigned>>* = nullptr>
-__device__ void AtomicReduce(T *address, T val, ReductionOpT reduce) {
+template <typename T, typename ReductionOpT>
+__device__ 
+typename std::enable_if_t<
+    std::is_same_v<T, int> || std::is_same_v<T, unsigned>
+>
+AtomicReduce(T *address, T val, ReductionOpT reduce) {
    T old = *address, assumed;
    do {
       assumed = old;
@@ -63,9 +66,13 @@ __device__ void AtomicReduce(T *address, T val, ReductionOpT reduce) {
    } while (assumed != old);    
 }
 
-template <typename T, typename ReductionOpT,
-          typename std::enable_if_t<sizeof(T) == 4>* = nullptr>
-__device__ void AtomicReduce(T *address, T val, ReductionOpT reduce) {
+template <typename T, typename ReductionOpT>
+__device__ 
+typename std::enable_if_t<
+    !std::is_same_v<T, int> && !std::is_same_v<T, unsigned> && 
+    sizeof(T) == 4
+>
+AtomicReduce(T *address, T val, ReductionOpT reduce) {
     int * addr_as_int = reinterpret_cast<int *>(address);
     int old = *address, assumed{};
     T& assumed_T_ref = reinterpret_cast<T &>(assumed);
@@ -127,6 +134,8 @@ struct AgentSegmentFixup
 
     // Data type of key-value input iterator
     typedef typename std::iterator_traits<PairsInputIteratorT>::value_type KeyValuePairT;
+
+    using KeyT = typename KeyValuePairT::Key;
 
     // Value type
     typedef typename KeyValuePairT::Value ValueT;
@@ -263,7 +272,7 @@ struct AgentSegmentFixup
 
         // Load pairs
         KeyValuePairT oob_pair;
-        oob_pair.key = -1;      // 越界元素的默认值
+        oob_pair.key = static_cast<KeyT>(-1);      // 越界元素的默认值
 
         if (IS_LAST_TILE) {
             // 从全局内存d_pairs_in + tile_offset处加载num_remaining个数据,每个线程加载ITEMS_PER_THREAD个到pairs
@@ -290,7 +299,7 @@ struct AgentSegmentFixup
         // Flush last item if valid
         ValueT* d_scatter = d_aggregates_out + pairs[ITEMS_PER_THREAD - 1].key;
         // 不为最后一个线程块分片或者最后一个元素有key值(有效元素)
-        if ((!IS_LAST_TILE) || (pairs[ITEMS_PER_THREAD - 1].key >= 0)) {
+        if ((!IS_LAST_TILE) || (pairs[ITEMS_PER_THREAD - 1].key != static_cast<KeyT>(-1))) {
             // 写入输出内存
             AtomicReduce(d_scatter, pairs[ITEMS_PER_THREAD - 1].value, reduction_op);
         }
@@ -315,7 +324,7 @@ struct AgentSegmentFixup
 
         // Load pairs
         KeyValuePairT oob_pair;
-        oob_pair.key = -1;
+        oob_pair.key = static_cast<KeyT>(-1);
 
         if (IS_LAST_TILE) {
             // 从全局内存d_pairs_in + tile_offset处加载num_remaining个数据,每个线程加载ITEMS_PER_THREAD个到pairs

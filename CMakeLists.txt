@@ -34,11 +34,7 @@ macro (add_cuda_exec exec_name exec_file)
         CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
         CUDA_SEPARABLE_COMPILATION ON
     )
-    target_link_libraries(${exec_name}
-        PUBLIC cudart /home/huanghy/progs/nvidia_hpc_sdk/Linux_x86_64/22.11/math_libs/lib64/libcusparse.so
-    )
+    target_link_libraries(${exec_name} PUBLIC cudart cusparse)
 endmacro (add_cuda_exec)
 
 add_cuda_exec(spmv main.cu)
-add_cuda_exec(tmp tmp.cu)
-add_cuda_exec(genl genl.cu)
