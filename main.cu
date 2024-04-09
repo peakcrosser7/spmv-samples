@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <numeric>
 #include <cmath>
+#include <filesystem>
 
 #include <cuda_runtime.h>
 
@@ -19,7 +20,7 @@ constexpr int TEST_TIMES = 2000;
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::cerr << "usage: ./bin/<program-name>  <filename.mtx>  <SpMV_kind_string>..." << std::endl;
+        cerr << "usage: ./bin/<program-name>  <filename.mtx>  <SpMV_kind_string>..." << endl;
         exit(1);        
     }
 
@@ -33,6 +34,9 @@ int main(int argc, char** argv) {
     n_rows = csr.number_of_rows;
     n_cols = csr.number_of_columns;
     nnz = csr.number_of_nonzeros;
+
+    cout << "Dataset: " << filesystem::path(argv[1]).filename().string() << endl
+        << "\tn_rows: " << n_rows << "  n_cols: " << n_cols << "  nnz: " << nnz << endl; 
 
     vector<value_t> vec_x(n_cols, 1);
 
@@ -104,7 +108,7 @@ int main(int argc, char** argv) {
             total_time += Timer::total_cost();
             kernel_time += Timer::kernel_cost();
         }
-        printf("[%-12s] total: %12lfms  kernel: %12lfms\n", 
+        printf("[%-12s] total: %12lf ms  kernel: %12lf ms\n", 
             kind.data(), 1. * total_time / TEST_TIMES, 1. * kernel_time / TEST_TIMES);
     }
 

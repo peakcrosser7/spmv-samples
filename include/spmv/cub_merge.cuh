@@ -27,7 +27,7 @@ void SpMV_cub_merge_based(
     void *d_temp_storage = NULL;
 
     // Caching allocator for device memory
-    cub::CachingDeviceAllocator  allocator(true);          
+    // cub::CachingDeviceAllocator  allocator(true);          
 
     // Get amount of temporary storage needed
     CubDebugExit(DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, 
@@ -39,7 +39,8 @@ void SpMV_cub_merge_based(
                                    (cudaStream_t)0, false));
 
     // Allocate
-    CubDebugExit(allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+    // CubDebugExit(allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+    checkCudaErr(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
     Timer::kernel_start();
     CubDebugExit(DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, 
@@ -50,4 +51,5 @@ void SpMV_cub_merge_based(
                                    y, n_rows, n_cols, nnz,
                                    (cudaStream_t)0, false));
     Timer::kernel_stop();
+    checkCudaErr(cudaFree(d_temp_storage));
 }
